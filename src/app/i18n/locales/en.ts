@@ -37,6 +37,11 @@ export const en = {
     enterMap: 'Enter Turkiye map',
     approachingMap: 'Approaching Turkiye map',
     preparingLayer: 'Preparing 81 province forecast layer',
+    countryComingSoon: 'Coming soon',
+    countryComingSoonDetail: 'This country is not yet supported',
+    turkeyName: 'Turkiye',
+    ankaraName: 'Ankara',
+    loadingCountries: 'Loading',
   },
   provinceSearch: {
     label: 'Select province',
