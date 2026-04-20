@@ -1,48 +1,59 @@
 import type { Province } from '../../../entities/province'
 import type { WeatherTemperatureSummary } from '../../../entities/weather'
 import { formatTemperature } from '../../../shared/lib/temperatureScale'
-import { labelPositionToSvgPoint } from '../lib/mapCoordinates'
 
 type TemperatureLabelProps = {
   province: Province
+  point: { x: number; y: number }
   temperature?: WeatherTemperatureSummary
   isSelected: boolean
+  onHover: (provinceId?: string) => void
   onSelect: (provinceId: string) => void
 }
 
 export function TemperatureLabel({
   province,
+  point,
   temperature,
   isSelected,
+  onHover,
   onSelect,
 }: TemperatureLabelProps) {
-  const { x, y } = labelPositionToSvgPoint(province.labelPosition)
+  const temperatureText = temperature ? formatTemperature(temperature.current) : '--'
+  const labelWidth = temperatureText.length > 3 ? 28 : 24
 
   return (
     <g
       aria-hidden="true"
       className="cursor-pointer transition-opacity duration-150"
       onClick={() => onSelect(province.id)}
-      transform={`translate(${x} ${y})`}
+      onMouseEnter={() => onHover(province.id)}
+      onMouseLeave={() => onHover(undefined)}
+      transform={`translate(${point.x} ${point.y})`}
     >
+      <title>
+        {province.name} {temperatureText}
+      </title>
       <rect
-        fill={isSelected ? '#ffffff' : 'rgba(15, 23, 42, 0.86)'}
-        height="22"
-        rx="5"
-        stroke={isSelected ? '#22d3ee' : 'rgba(255,255,255,0.34)'}
-        strokeWidth="1.5"
-        width="38"
-        x="-19"
-        y="-13"
+        fill={isSelected ? 'var(--color-accent)' : 'var(--color-surface)'}
+        height="16"
+        rx="8"
+        stroke={isSelected ? 'var(--color-accent-strong)' : 'var(--color-border)'}
+        strokeWidth={isSelected ? '1.3' : '0.6'}
+        width={labelWidth}
+        x={-labelWidth / 2}
+        y="-8"
       />
       <text
         dominantBaseline="middle"
-        fill={isSelected ? '#0f172a' : '#ffffff'}
-        fontSize="13"
-        fontWeight="700"
+        fill={isSelected ? '#ffffff' : 'var(--color-accent)'}
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+        fontSize="8.6"
+        fontWeight="800"
         textAnchor="middle"
+        x="0"
       >
-        {temperature ? formatTemperature(temperature.current) : '--'}
+        {temperatureText}
       </text>
     </g>
   )

@@ -16,12 +16,19 @@ type OpenMeteoDailyResponse = {
   weather_code?: number[]
 }
 
+type OpenMeteoCurrentResponse = {
+  temperature_2m?: number
+  time?: string
+  weather_code?: number
+}
+
 type OpenMeteoForecastResponse = {
+  current?: OpenMeteoCurrentResponse
   daily?: OpenMeteoDailyResponse
 }
 
 const OPEN_METEO_FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
-const FORECAST_DAYS = 5
+const FORECAST_DAYS = 7
 const REQUEST_CHUNK_SIZE = 25
 
 function chunkItems<T>(items: T[], chunkSize: number): T[][] {
@@ -42,6 +49,7 @@ function createForecastUrl(provinces: Province[]): string {
     longitude: provinces
       .map((province) => province.coordinates.longitude.toString())
       .join(','),
+    current: 'temperature_2m,weather_code',
     daily: 'temperature_2m_max,temperature_2m_min,weather_code',
     forecast_days: FORECAST_DAYS.toString(),
     timezone: 'Europe/Istanbul',
@@ -85,6 +93,9 @@ function normalizeProvinceForecast(
   ).filter((day): day is ForecastDay => day !== undefined)
 
   return {
+    currentTemperature: response.current?.temperature_2m,
+    currentUpdatedAt: response.current?.time,
+    currentWeatherCode: response.current?.weather_code,
     days,
     providerId: 'open-meteo',
     provinceId,

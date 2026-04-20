@@ -1,8 +1,13 @@
 import type { Province } from '../../../entities/province'
-import type { ProvinceForecast } from '../../../entities/weather'
+import {
+  getForecastDayByDate,
+  type ProvinceForecast,
+} from '../../../entities/weather'
 import { formatUpdatedAt } from '../../../shared/lib/dateFormat'
 import { formatTemperature } from '../../../shared/lib/temperatureScale'
+import { WeatherIcon } from '../../../shared/ui'
 import { ForecastDayCard } from './ForecastDayCard'
+import { useTranslation } from 'react-i18next'
 
 type ForecastPanelProps = {
   forecast?: ProvinceForecast
@@ -10,6 +15,7 @@ type ForecastPanelProps = {
   isLoading: boolean
   province: Province
   onRetry: () => void
+  selectedDate?: string
 }
 
 export function ForecastPanel({
@@ -18,68 +24,143 @@ export function ForecastPanel({
   isLoading,
   province,
   onRetry,
+  selectedDate,
 }: ForecastPanelProps) {
+  const { i18n, t } = useTranslation()
+  const locale = i18n.language === 'en' ? 'en-US' : 'tr-TR'
   const today = forecast?.days[0]
+  const selectedDay = getForecastDayByDate(forecast, selectedDate)
+  const isCurrentDay = Boolean(selectedDay && today?.date === selectedDay.date)
+  const currentTemperature =
+    isCurrentDay && forecast?.currentTemperature !== undefined
+      ? forecast.currentTemperature
+      : selectedDay?.temperatureMean
+  const currentWeatherCode =
+    isCurrentDay && forecast?.currentWeatherCode !== undefined
+      ? forecast.currentWeatherCode
+      : selectedDay?.weatherCode
+  const temperatureLabel = isCurrentDay
+    ? t('forecast.current')
+    : t('forecast.selectedDay')
 
   return (
-    <aside className="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-slate-950/10">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-            5 gunluk tahmin
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-white">
-            {province.name}
-          </h2>
+    <aside className="overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--color-panel-shadow)]">
+      <div className="border-b border-[var(--color-border)] p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold text-[var(--color-text-muted)]">
+              {t('forecast.activeProvince')}
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-normal text-[var(--color-text)]">
+              {province.name}
+            </h2>
+          </div>
+
+          <span className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-accent-soft)] font-mono text-xs font-bold text-[var(--color-accent)]">
+            {province.plateCode.toString().padStart(2, '0')}
+          </span>
         </div>
 
-        <div className="min-w-20 rounded-md bg-cyan-300 px-3 py-2 text-right text-slate-950">
-          <p className="text-xs font-semibold">Bugun</p>
-          <p className="text-xl font-bold">
-            {today ? formatTemperature(today.temperatureMean) : '--'}
+        <div className="mt-6">
+          <p className="text-xs font-semibold text-[var(--color-text-muted)]">
+            {temperatureLabel}
           </p>
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <div className="flex items-baseline gap-2">
+              <p className="font-mono text-6xl font-light leading-none text-[var(--color-accent)]">
+                {currentTemperature !== undefined
+                  ? formatTemperature(currentTemperature)
+                  : '--'}
+              </p>
+              <span className="text-sm uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                C
+              </span>
+            </div>
+            <WeatherIcon
+              className="shrink-0"
+              weatherCode={currentWeatherCode}
+            />
+          </div>
         </div>
+
+        <p className="mt-4 text-sm text-[var(--color-text-muted)]">
+          {selectedDay
+            ? `${formatTemperature(selectedDay.temperatureMin)} ${t('forecast.min')} / ${formatTemperature(
+                selectedDay.temperatureMax,
+              )} ${t('forecast.max')}`
+            : t('forecast.waiting')}
+        </p>
       </div>
 
-      {forecast ? (
-        <p className="mt-3 text-xs text-slate-400">
-          Guncelleme: {formatUpdatedAt(forecast.updatedAt)}
-        </p>
-      ) : null}
+      <div className="grid grid-cols-2 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)]">
+        <Metric
+          label={t('forecast.updated')}
+          value={forecast ? formatUpdatedAt(forecast.updatedAt, locale) : '--'}
+        />
+        <Metric label={t('forecast.projection')} value={t('forecast.projectionValue')} />
+      </div>
 
-      {isLoading ? (
-        <div className="mt-5 space-y-3">
-          {Array.from({ length: 5 }, (_, index) => (
-            <div
-              className="h-16 animate-pulse rounded-lg bg-slate-800/80"
-              key={index}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {isError ? (
-        <div className="mt-5 rounded-lg border border-rose-300/30 bg-rose-950/60 p-4">
-          <p className="text-sm font-semibold text-rose-100">
-            Tahmin bilgisi alinamadi
+      <div className="p-6">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-xs font-semibold text-[var(--color-text-muted)]">
+            {t('forecast.fiveDayProjection')}
           </p>
-          <button
-            className="mt-3 rounded-md bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-950 transition hover:bg-white"
-            onClick={onRetry}
-            type="button"
-          >
-            Tekrar dene
-          </button>
+          {isLoading ? (
+            <span className="text-xs text-[var(--color-accent)]">{t('forecast.loading')}</span>
+          ) : null}
         </div>
-      ) : null}
 
-      {!isLoading && !isError && forecast ? (
-        <ul className="mt-5 space-y-3">
-          {forecast.days.map((day) => (
-            <ForecastDayCard day={day} key={day.date} />
-          ))}
-        </ul>
-      ) : null}
+        {isLoading ? (
+          <div className="mt-5 space-y-3">
+            {Array.from({ length: 7 }, (_, index) => (
+              <div
+                className="h-14 animate-pulse rounded-md bg-[var(--color-surface-muted)]"
+                key={index}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {isError ? (
+          <div className="mt-5 rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] p-4">
+            <p className="text-sm font-semibold text-[var(--color-danger)]">
+              {t('forecast.errorTitle')}
+            </p>
+            <button
+              className="mt-3 rounded-md bg-[var(--color-danger)] px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+              onClick={onRetry}
+              type="button"
+            >
+              {t('forecast.retry')}
+            </button>
+          </div>
+        ) : null}
+
+        {!isLoading && !isError && forecast ? (
+          <ul className="mt-4">
+            {forecast.days.map((day) => (
+              <ForecastDayCard
+                day={day}
+                isSelected={day.date === selectedDay?.date}
+                key={day.date}
+              />
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </aside>
+  )
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 border-r border-[var(--color-border)] p-4 last:border-r-0">
+      <p className="text-xs font-medium text-[var(--color-text-muted)]">
+        {label}
+      </p>
+      <p className="mt-2 truncate text-sm font-semibold text-[var(--color-text)]">
+        {value}
+      </p>
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 # WeatherUI
 
-Turkiye'deki 81 ilin sicaklik ve 5 gunluk hava tahmini bilgisini harita uzerinden gosteren React uygulamasi.
+Turkiye'deki 81 ilin sicaklik ve 7 gunluk hava tahmini bilgisini harita uzerinden gosteren React uygulamasi.
 
 ## Baslangic
 

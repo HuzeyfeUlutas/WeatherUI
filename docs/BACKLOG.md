@@ -17,6 +17,9 @@ Bu dosya MVP sonrasi isleri takip etmek icin tutulur.
 - Component testleri ekle.
 - Playwright ile desktop/mobile screenshot smoke test ekle.
 - Harita uzerinde 81 etiket gorunurluk kontrolu ekle.
+- Hardcoded kullanici metni taramasi icin basit test/script ekle.
+- i18n sozluklerinde eksik key yakalamak icin type-safe key kontrolu degerlendir.
+- Tema token kullanimini kontrol eden basit lint/check scripti degerlendir.
 
 ## Veri Kaynagi
 
@@ -30,3 +33,5 @@ Bu dosya MVP sonrasi isleri takip etmek icin tutulur.
 - Haritada zoom/pan ihtiyacini degerlendir.
 - En yakin il ozelligi icin browser geolocation ekle.
 - Son guncelleme zamanini global olarak daha gorunur yap.
+- Dil seciciyi mobil header'da daha kompakt hale getirme ihtiyacini test et.
+- Tema secicinin mobil header'da tasma yapmadigini gercek cihaz genisliklerinde kontrol et.

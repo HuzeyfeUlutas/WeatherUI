@@ -15,11 +15,15 @@ export type ForecastDay = {
 
 export type WeatherTemperatureSummary = {
   current: number
+  currentWeatherCode?: WeatherConditionCode
   min: number
   max: number
 }
 
 export type ProvinceForecast = {
+  currentTemperature?: number
+  currentUpdatedAt?: string
+  currentWeatherCode?: WeatherConditionCode
   provinceId: ProvinceId
   providerId: WeatherProviderId
   updatedAt: string

@@ -1,1 +1,5 @@
 export { DataAttribution } from './DataAttribution'
+export { LanguageSwitcher } from './LanguageSwitcher'
+export { Shell } from './Shell'
+export { ThemeSwitcher } from './ThemeSwitcher'
+export { WeatherIcon } from './WeatherIcon'

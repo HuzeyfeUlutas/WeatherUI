@@ -1,6 +1,8 @@
 export { OpenMeteoWeatherProvider } from './api/openMeteoWeatherProvider'
 export { weatherQueryKeys } from './api/queryKeys'
 export {
+  getForecastDayByDate,
+  getTemperatureSummaryForDate,
   getTemperatureSummariesByProvinceId,
   getTodayTemperatureSummary,
   indexForecastsByProvinceId,

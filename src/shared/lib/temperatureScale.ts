@@ -1,5 +1,6 @@
 export type TemperatureBand = {
   id: string
+  labelKey: string
   min: number
   max: number
   label: string
@@ -11,6 +12,7 @@ export type TemperatureBand = {
 export const TEMPERATURE_BANDS: TemperatureBand[] = [
   {
     id: 'freezing',
+    labelKey: 'legend.freezing',
     min: Number.NEGATIVE_INFINITY,
     max: 0,
     label: '0°C ve alti',
@@ -20,6 +22,7 @@ export const TEMPERATURE_BANDS: TemperatureBand[] = [
   },
   {
     id: 'cold',
+    labelKey: 'legend.cold',
     min: 0,
     max: 10,
     label: '0°C - 10°C',
@@ -29,6 +32,7 @@ export const TEMPERATURE_BANDS: TemperatureBand[] = [
   },
   {
     id: 'mild',
+    labelKey: 'legend.mild',
     min: 10,
     max: 20,
     label: '10°C - 20°C',
@@ -38,6 +42,7 @@ export const TEMPERATURE_BANDS: TemperatureBand[] = [
   },
   {
     id: 'warm',
+    labelKey: 'legend.warm',
     min: 20,
     max: 30,
     label: '20°C - 30°C',
@@ -47,6 +52,7 @@ export const TEMPERATURE_BANDS: TemperatureBand[] = [
   },
   {
     id: 'hot',
+    labelKey: 'legend.hot',
     min: 30,
     max: Number.POSITIVE_INFINITY,
     label: '30°C ve ustu',

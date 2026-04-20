@@ -1,16 +1,57 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  background: #020617;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #f6f8fb;
+  --color-bg-soft: #eef3f8;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border: #d9e2ec;
+  --color-border-strong: #b9c7d4;
+  --color-text: #17212b;
+  --color-text-muted: #657482;
+  --color-accent: #0f8ea0;
+  --color-accent-strong: #0b7180;
+  --color-accent-soft: #dff5f7;
+  --color-danger: #be123c;
+  --color-danger-soft: #fff1f2;
+  --color-map-sea: #eef6f8;
+  --color-panel-shadow: 0 18px 55px rgba(15, 34, 50, 0.12);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #0d1117;
+  --color-bg-soft: #111821;
+  --color-surface: #151b23;
+  --color-surface-muted: #1b2430;
+  --color-border: #2b3642;
+  --color-border-strong: #40505f;
+  --color-text: #e6edf3;
+  --color-text-muted: #9aa8b5;
+  --color-accent: #2bb8c8;
+  --color-accent-strong: #6fd7df;
+  --color-accent-soft: #12343b;
+  --color-danger: #fb7185;
+  --color-danger-soft: #3b1720;
+  --color-map-sea: #101820;
+  --color-panel-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 button,
@@ -18,4 +59,9 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-text);
 }
