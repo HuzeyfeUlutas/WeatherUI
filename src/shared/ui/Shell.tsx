@@ -10,6 +10,7 @@ type ShellProps = {
   actions?: ReactNode
   children: ReactNode
   footerMeta?: ReactNode
+  immersive?: boolean
   title: string
 }
 
@@ -17,6 +18,7 @@ export function Shell({
   actions,
   children,
   footerMeta,
+  immersive = false,
   title,
 }: ShellProps) {
   const { t } = useTranslation()
@@ -47,14 +49,16 @@ export function Shell({
           </div>
         </header>
 
-        <section className="relative z-10 px-4 py-6 md:py-8">
-          <div className="mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-[1760px] flex-col">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-sm font-semibold tracking-normal text-[var(--color-text-muted)]">
-                {title}
-              </h1>
-              {footerMeta}
-            </div>
+        <section className={immersive ? 'relative z-10' : 'relative z-10 px-4 py-6 md:py-8'}>
+          <div className={immersive ? 'flex w-full flex-col' : 'mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-[1760px] flex-col'}>
+            {!immersive && (
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-sm font-semibold tracking-normal text-[var(--color-text-muted)]">
+                  {title}
+                </h1>
+                {footerMeta}
+              </div>
+            )}
             {children}
           </div>
         </section>

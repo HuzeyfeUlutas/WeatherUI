@@ -42,6 +42,8 @@ export const en = {
     turkeyName: 'Turkiye',
     ankaraName: 'Ankara',
     loadingCountries: 'Loading',
+    collapsePanel: 'Collapse panel',
+    expandPanel: 'Expand panel',
   },
   provinceSearch: {
     label: 'Select province',

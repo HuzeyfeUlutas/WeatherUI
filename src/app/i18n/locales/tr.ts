@@ -42,6 +42,8 @@ export const tr = {
     turkeyName: 'Turkiye',
     ankaraName: 'Ankara',
     loadingCountries: 'Yukleniyor',
+    collapsePanel: 'Paneli kapat',
+    expandPanel: 'Paneli ac',
   },
   provinceSearch: {
     label: 'Il sec',
