@@ -1,29 +1,30 @@
 # Hava Atlasi
 
-Turkiye'deki 81 ilin sicaklik ve 7 gunluk hava tahmini bilgisini interaktif harita uzerinden gosteren React uygulamasi.
+An interactive React weather dashboard that shows current and 7-day forecast temperatures for all 81 provinces in Turkey on a map.
 
-Hava Atlasi, il bazli hava durumunu hizli okunabilir bir harita deneyimiyle sunmayi hedefler. Haritadaki sicaklik etiketleri hover gerektirmeden gorunur, tarih seciciyle 7 gunluk tahminler arasinda gezilebilir ve secili il icin detay paneli acilir.
+Hava Atlasi is designed as a fast, readable province-level weather map. Temperature badges are always visible without hover, users can switch between 7 forecast days, and a detail panel shows the selected province forecast.
 
-## Ozellikler
+## Features
 
-- 81 ilin tamamini gosteren interaktif Turkiye haritasi
-- Her il uzerinde surekli gorunen sicaklik rozeti
-- Secili tarihe gore harita sicakliklarini guncelleyen 7 gunluk tarih secici
-- Bugun icin Open-Meteo `current.temperature_2m`, gelecek gunler icin daily tahmin ozeti
-- Secili il icin 7 gunluk tahmin paneli
-- Il arama/secme alani
-- Dark/light tema destegi
-- Turkce ve Ingilizce arayuz destegi
-- Mobilde yatay suruklenebilir harita ve secili ili merkeze alma davranisi
-- React Query ile 2 saatlik in-memory cache
-- Three.js tabanli dunya giris ekrani
+- Interactive Turkey map covering all 81 provinces
+- Always-visible temperature badge for every province
+- 7-day forecast date selector that updates the map temperatures
+- Current-day temperature from Open-Meteo `current.temperature_2m`
+- Future-day map temperatures calculated from daily forecast summaries
+- Selected province detail panel with 7-day forecast
+- Province search/select control
+- Dark and light theme support
+- Turkish and English UI support
+- Mobile-friendly horizontally scrollable map that centers the selected province
+- 2-hour in-memory cache with TanStack React Query
+- Three.js globe entry screen
 
-## Ekranlar
+## Screens
 
-- Globe view: Turkiye secimiyle harita ekranina gecis.
-- Turkey map view: Il bazli sicaklik haritasi, tarih secici, il arama ve detay paneli.
+- Globe view: entry screen for selecting Turkey and transitioning to the map.
+- Turkey map view: province-level temperature map, forecast date selector, province search, and detail panel.
 
-## Stack
+## Tech Stack
 
 - Vite
 - React
@@ -37,42 +38,42 @@ Hava Atlasi, il bazli hava durumunu hizli okunabilir bir harita deneyimiyle sunm
 - turkey-map-react
 - @meteocons/svg
 
-## Baslangic
+## Getting Started
 
-Gereksinimler:
+Requirements:
 
 - Node.js
 - npm
 
-Kurulum:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Gelistirme sunucusu:
+Run the development server:
 
 ```bash
 npm run dev
 ```
 
-Production build:
+Create a production build:
 
 ```bash
 npm run build
 ```
 
-Build onizleme:
+Preview the production build:
 
 ```bash
 npm run preview
 ```
 
-## Veri Kaynagi
+## Data Source
 
-Aktif hava durumu kaynagi [Open-Meteo](https://open-meteo.com/) Forecast API'dir.
+The active weather data source is the [Open-Meteo](https://open-meteo.com/) Forecast API.
 
-Kullanilan alanlar:
+Used fields:
 
 - `current.temperature_2m`
 - `current.weather_code`
@@ -80,39 +81,39 @@ Kullanilan alanlar:
 - `daily.temperature_2m_min`
 - `daily.weather_code`
 
-Notlar:
+Notes:
 
-- Forecast araligi 7 gundur.
-- Timezone `Europe/Istanbul` olarak kullanilir.
-- Tarih secimi yeni API istegi atmaz; mevcut cached response uzerinden client tarafinda hesaplanir.
-- React Query `staleTime` ve `gcTime` degerleri 2 saattir.
-- Open-Meteo attribution uygulama icinde gorunur tutulur.
+- Forecast range is 7 days.
+- Timezone is set to `Europe/Istanbul`.
+- Changing the selected forecast date does not trigger a new API request; it recalculates values from the cached response on the client.
+- React Query uses a 2-hour `staleTime` and `gcTime`.
+- Open-Meteo attribution is kept visible in the app.
 
-MGM endpointleri arastirildi ancak direkt dis kullanimda `Not allowed by MGM` dondugu ve CORS olmadigi icin aktif kaynak yapilmadi. Detaylar icin `docs/DATA_SOURCES.md` dosyasina bakabilirsiniz.
+MGM endpoints were researched, but direct external usage returned `Not allowed by MGM` and no CORS support was available. For details, see `docs/DATA_SOURCES.md`.
 
-## Proje Yapisi
+## Project Structure
 
 ```text
 src/app       App shell, providers, global UI store, i18n
-src/entities  Domain modelleri ve veri providerlari
-src/features  Component bazli feature modulleri
+src/entities  Domain models and data providers
+src/features  Component-based feature modules
 src/pages     Page-level composition
-src/shared    Genel helper, format ve UI utility kodlari
-docs          Mimari, veri kaynagi ve task notlari
+src/shared    Shared helpers, formatters, and UI utilities
+docs          Architecture, data source, and task notes
 ```
 
-## Mimari Notlar
+## Architecture Notes
 
 - Server/API state: TanStack React Query
 - UI/client state: Zustand
 - Form state: React Hook Form
-- Kullaniciya gorunen metinler i18n sozluklerinden gelir.
-- Renkler mumkun oldugunca `src/styles/index.css` tema tokenlari uzerinden kullanilir.
-- Weather provider katmani adaptor mantigiyla ayrilmistir; aktif provider `OpenMeteoWeatherProvider`.
+- User-facing text is managed through i18n dictionaries.
+- Colors should use theme tokens from `src/styles/index.css` where possible.
+- Weather data is isolated behind a provider/adaptor layer. The active provider is `OpenMeteoWeatherProvider`.
 
-## Dokumantasyon
+## Documentation
 
-Proje hakkinda daha fazla bilgi:
+More project notes:
 
 - `AGENTS.md`
 - `docs/ARCHITECTURE.md`
@@ -126,6 +127,6 @@ Proje hakkinda daha fazla bilgi:
 - Weather icons use `@meteocons/svg`, licensed under MIT.
 - Earth texture attribution is shown in the app.
 
-## Lisans
+## License
 
-Bu proje su anda open source gelistirme amaciyla hazirlanmaktadir. Lisans dosyasi eklenecekse repository kokune `LICENSE` dosyasi eklenmelidir.
+This project is currently being developed as an open-source project. If a formal license is needed, add a `LICENSE` file to the repository root.
