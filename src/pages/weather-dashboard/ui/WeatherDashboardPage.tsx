@@ -96,12 +96,8 @@ export function WeatherDashboardPage() {
     return (
       <Shell
         activeSection="global"
+        immersive
         title={t('app.globeTitle')}
-        footerMeta={
-          <span className="text-sm font-medium text-[var(--color-accent)]">
-            {t('app.target')}
-          </span>
-        }
       >
         <Suspense
           fallback={

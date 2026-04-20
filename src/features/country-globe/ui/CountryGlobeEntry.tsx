@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type React from 'react'
 import { useTranslation } from 'react-i18next'
 import * as THREE from 'three'
@@ -54,8 +54,14 @@ export function CountryGlobeEntry({
   const [isEntering, setIsEntering] = useState(false)
   const [showComingSoon, setShowComingSoon] = useState(false)
   const [geoCountries, setGeoCountries] = useState<GeoCountry[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const [panelOpen, setPanelOpen] = useState(true)
   const comingSoonTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const focusTriggerRef = useRef<{ lat: number; lon: number } | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch('/countries-110m.geojson')
@@ -80,6 +86,50 @@ export function CountryGlobeEntry({
 
   const selectedGeoCountry = geoCountries.find((c) => c.id === selectedCountryId)
   const isTurkey = selectedCountryId === 'TR'
+
+  const filteredCountries = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim()
+    if (!q) return geoCountries
+    return geoCountries.filter((c) => c.name.toLowerCase().includes(q))
+  }, [geoCountries, searchQuery])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+        setSearchQuery('')
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [dropdownOpen])
+
+  // Keyboard navigation for dropdown
+  useEffect(() => {
+    if (!dropdownOpen) { setHighlightedIndex(-1); return }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setDropdownOpen(false); setSearchQuery('') }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); setHighlightedIndex((i) => Math.min(i + 1, filteredCountries.length - 1)) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightedIndex((i) => Math.max(i - 1, 0)) }
+      else if (e.key === 'Enter' && highlightedIndex >= 0) { selectCountry(filteredCountries[highlightedIndex].id) }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [dropdownOpen, filteredCountries, highlightedIndex])
+
+  const openDropdown = () => {
+    setDropdownOpen(true)
+    setSearchQuery('')
+    window.setTimeout(() => searchInputRef.current?.focus(), 30)
+  }
+
+  const selectCountry = (id: string) => {
+    handleCountrySelect(id)
+    setDropdownOpen(false)
+    setSearchQuery('')
+  }
 
   const enterCountry = () => {
     onSelectCountry('TR')
@@ -107,17 +157,16 @@ export function CountryGlobeEntry({
   }
 
   return (
-    <div className="grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
-      <section
-        className="relative min-h-[calc(100vh-11rem)] overflow-hidden rounded-lg border border-[var(--color-border)] bg-[#101820] shadow-[var(--color-panel-shadow)]"
-        style={{ backgroundColor: '#10131a' }}
-      >
+    <div
+      className="relative bg-[#0b0e14]"
+      style={{ minHeight: 'calc(100vh - 4.5rem)' }}
+    >
+      {/* Globe — own overflow-hidden wrapper to clip scale animation */}
+      <div className="absolute inset-0 overflow-hidden">
         <div
           className={[
             'absolute inset-0 transition duration-700 ease-out',
-            isEntering
-              ? 'scale-[1.08] opacity-100 blur-0'
-              : 'scale-100 opacity-100 blur-0',
+            isEntering ? 'scale-[1.06]' : 'scale-100',
           ].join(' ')}
         >
           <RealisticGlobe
@@ -126,87 +175,155 @@ export function CountryGlobeEntry({
             onClickCountry={handleGlobeClick}
           />
         </div>
+      </div>
 
-        <div
-          className={[
-            'pointer-events-none absolute inset-0 z-40 grid place-items-center bg-black/50 transition duration-700',
-            isEntering ? 'opacity-0' : 'opacity-0',
-          ].join(' ')}
-        >
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5 text-center shadow-[var(--color-panel-shadow)]">
-            <p className="text-sm font-semibold text-[var(--color-accent)]">
-              {t('globe.approachingMap')}
-            </p>
-            <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-              {t('globe.preparingLayer')}
+      {/* Coming-soon toast */}
+      {showComingSoon && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-8 z-50 flex justify-center">
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/90 px-5 py-3 shadow-[var(--color-panel-shadow)] backdrop-blur-xl">
+            <p className="text-sm font-semibold text-[var(--color-text)]">{t('globe.countryComingSoon')}</p>
+            <p className="mt-0.5 text-center text-xs text-[var(--color-text-muted)]">
+              {t('globe.countryComingSoonDetail')}
             </p>
           </div>
         </div>
+      )}
 
-        {showComingSoon && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-6 z-50 flex justify-center">
-            <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-[var(--color-panel-shadow)]">
-              <p className="text-sm font-semibold text-[var(--color-text)]">
-                {t('globe.countryComingSoon')}
-              </p>
-              <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-                {t('globe.countryComingSoonDetail')}
-              </p>
-            </div>
-          </div>
-        )}
-      </section>
+      {/* Panel toggle tab — always visible, slides with panel */}
+      <button
+        type="button"
+        aria-label={t(panelOpen ? 'globe.collapsePanel' : 'globe.expandPanel')}
+        onClick={() => setPanelOpen((v) => !v)}
+        className={[
+          'absolute top-1/2 z-30 -translate-y-1/2',
+          'flex h-12 w-8 items-center justify-center',
+          'rounded-l-xl border border-r-0',
+          'border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-xl',
+          'text-[var(--color-text-muted)] transition-[right] duration-300 ease-in-out',
+          'hover:text-[var(--color-text)]',
+          panelOpen ? 'right-[300px] sm:right-[360px]' : 'right-0',
+        ].join(' ')}
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          {panelOpen ? (
+            <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+          ) : (
+            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+        </svg>
+      </button>
 
-      <aside className="relative z-20 ml-auto w-full max-w-[380px] self-stretch rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-7 py-7 shadow-[var(--color-panel-shadow)]">
-        <p className="text-xs font-semibold text-[var(--color-text-muted)]">
+      {/* Floating panel */}
+      <aside
+        className={[
+          'absolute bottom-0 right-0 top-0 z-20 flex flex-col',
+          'w-[300px] sm:w-[360px]',
+          'border-l border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-2xl',
+          'transition-transform duration-300 ease-in-out',
+          panelOpen ? 'translate-x-0' : 'translate-x-full',
+        ].join(' ')}
+      >
+        <div className="flex flex-1 flex-col px-5 py-6 sm:px-7 sm:py-8">
+        {/* Section label */}
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
           {t('globe.countryCommand')}
         </p>
-        <h3 className="mt-3 text-3xl font-bold text-[var(--color-text)]">
+
+        {/* Country name */}
+        <h2 className="mt-3 truncate text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl">
           {selectedGeoCountry?.name ?? t('globe.turkeyName')}
-        </h3>
-        <p className="mt-1 text-sm font-medium text-[var(--color-accent)]">
+        </h2>
+        <p className="mt-1.5 text-sm font-medium text-[var(--color-accent)]">
           {isTurkey ? t('globe.ankaraFocus') : t('globe.countryComingSoon')}
         </p>
 
-        <div className="mt-9">
-          <label
-            className="text-xs font-semibold text-[var(--color-text-muted)]"
-            htmlFor="country-search"
-          >
+        {/* Divider */}
+        <div className="mt-6 h-px bg-[var(--color-border)]" />
+
+        {/* Country selector */}
+        <div className="mt-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
             {t('globe.countrySelect')}
-          </label>
-          <div className="relative mt-4">
-            <select
-              className="h-12 w-full appearance-none rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-4 pr-12 text-sm font-semibold text-[var(--color-text)] outline-none transition hover:border-[var(--color-border-strong)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
-              id="country-search"
-              value={selectedCountryId}
-              onChange={(e) => handleCountrySelect(e.target.value)}
+          </p>
+          <div className="relative mt-3" ref={dropdownRef}>
+            {/* Trigger */}
+            <button
+              className="flex h-11 w-full items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-sm font-medium text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-soft)]"
+              type="button"
+              onClick={openDropdown}
             >
-              {geoCountries.length === 0 ? (
-                <option value="TR">{t('globe.loadingCountries')}</option>
-              ) : (
-                geoCountries.map((country) => (
-                  <option key={country.id} value={country.id}>
-                    {country.name}
-                  </option>
-                ))
-              )}
-            </select>
-            <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
-              ▾
-            </span>
+              <span className="truncate">
+                {selectedGeoCountry?.name ?? t('globe.turkeyName')}
+              </span>
+              <svg
+                className="ml-2 h-4 w-4 shrink-0 text-[var(--color-text-muted)]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {/* Dropdown */}
+            {dropdownOpen && (
+              <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--color-panel-shadow)]">
+                {/* Search */}
+                <div className="border-b border-[var(--color-border)] px-4 py-3">
+                  <input
+                    ref={searchInputRef}
+                    className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]"
+                    placeholder="Search…"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setHighlightedIndex(0)
+                    }}
+                  />
+                </div>
+                {/* List */}
+                <div className="max-h-56 overflow-y-auto">
+                  {filteredCountries.length === 0 ? (
+                    <p className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
+                      {t('provinceSearch.empty')}
+                    </p>
+                  ) : (
+                    filteredCountries.map((country, idx) => (
+                      <button
+                        key={country.id}
+                        className={[
+                          'flex w-full items-center px-4 py-2.5 text-left text-sm transition',
+                          country.id === selectedCountryId
+                            ? 'bg-[var(--color-accent-soft)] font-semibold text-[var(--color-accent)]'
+                            : idx === highlightedIndex
+                              ? 'bg-[var(--color-surface-muted)] text-[var(--color-text)]'
+                              : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]',
+                        ].join(' ')}
+                        type="button"
+                        onClick={() => selectCountry(country.id)}
+                        onMouseEnter={() => setHighlightedIndex(idx)}
+                      >
+                        {country.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="mt-9 py-6">
+        {/* Info rows */}
+        <div className="mt-6">
           {isTurkey ? (
-            <div className="space-y-5">
-              <InfoRow label={t('globe.selectableCountry')} value={t('globe.turkeyName')} />
-              <InfoRow label={t('globe.focusCapital')} value={t('globe.ankaraName')} />
-              <InfoRow label={t('globe.coverage')} value={t('globe.provinceNodes')} />
+            <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
+              <GlassInfoRow label={t('globe.selectableCountry')} value={t('globe.turkeyName')} />
+              <GlassInfoRow label={t('globe.focusCapital')} value={t('globe.ankaraName')} />
+              <GlassInfoRow label={t('globe.coverage')} value={t('globe.provinceNodes')} />
             </div>
           ) : (
-            <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-4 text-center">
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-5 py-6 text-center">
               <p className="text-sm font-semibold text-[var(--color-text-muted)]">
                 {t('globe.countryComingSoon')}
               </p>
@@ -217,22 +334,29 @@ export function CountryGlobeEntry({
           )}
         </div>
 
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* CTA */}
         <button
-          className={
+          className={[
+            'mt-8 h-12 w-full rounded-xl text-sm font-bold transition',
             isTurkey
-              ? 'mt-9 h-12 w-full rounded-md bg-[var(--color-accent)] px-5 text-sm font-bold text-white transition hover:bg-[var(--color-accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]'
-              : 'mt-9 h-12 w-full cursor-not-allowed rounded-md border border-[var(--color-border)] px-5 text-sm font-semibold text-[var(--color-text-muted)] opacity-60'
-          }
+              ? 'bg-[var(--color-accent)] text-white shadow-lg shadow-[var(--color-accent)]/20 hover:brightness-110 active:scale-[0.98]'
+              : 'cursor-not-allowed border border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] opacity-50',
+          ].join(' ')}
           disabled={!isTurkey}
-          onClick={isTurkey ? enterCountry : undefined}
           type="button"
+          onClick={isTurkey ? enterCountry : undefined}
         >
           {isTurkey ? t('globe.enterMap') : t('globe.countryComingSoon')}
         </button>
 
-        <p className="mt-6 text-xs leading-5 text-[var(--color-text-muted)]">
+        {/* Attribution */}
+        <p className="mt-5 text-[11px] leading-5 text-[var(--color-text-muted)]">
           {t('attribution.earthTexture')}
         </p>
+        </div>
       </aside>
     </div>
   )
@@ -608,13 +732,11 @@ function pointInPolygon(point: [number, number], ring: number[][]): boolean {
   return inside
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function GlassInfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-end justify-between gap-4 border-b border-[var(--color-border)] pb-3 last:border-b-0 last:pb-0">
+    <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-4 py-3 last:border-b-0">
       <span className="text-xs text-[var(--color-text-muted)]">{label}</span>
-      <span className="text-right font-mono text-sm font-semibold text-[var(--color-text)]">
-        {value}
-      </span>
+      <span className="font-mono text-sm font-semibold text-[var(--color-text)]">{value}</span>
     </div>
   )
 }
