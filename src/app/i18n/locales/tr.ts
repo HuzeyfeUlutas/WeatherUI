@@ -37,6 +37,11 @@ export const tr = {
     enterMap: 'Turkiye haritasina gec',
     approachingMap: 'Turkiye haritasina yaklasiliyor',
     preparingLayer: '81 il tahmin katmani hazirlaniyor',
+    countryComingSoon: 'Yakininda geliyor',
+    countryComingSoonDetail: 'Bu ulke henuz desteklenmiyor',
+    turkeyName: 'Turkiye',
+    ankaraName: 'Ankara',
+    loadingCountries: 'Yukleniyor',
   },
   provinceSearch: {
     label: 'Il sec',

@@ -17,7 +17,8 @@ Hava Atlasi is designed as a fast, readable province-level weather map. Temperat
 - Turkish and English UI support
 - Mobile-friendly horizontally scrollable map that centers the selected province
 - 2-hour in-memory cache with TanStack React Query
-- Three.js globe entry screen
+- Three.js globe entry screen with country borders and click-to-focus animation
+- Country selection panel with all world countries; Turkey enters the full map, others show coming-soon state
 
 ## Screens
 

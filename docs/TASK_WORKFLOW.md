@@ -29,6 +29,14 @@ Her task sonunda su bilgileri ver:
 5. Detay paneli ve il secimi
 6. UI polish ve kalite
 7. MGM arastirma
+8. Three.js globe giris ekrani
+9. Globe uzerinde ulke sinirlari (Line2, #7accff, 1.5px)
+10. Border sync duzeltmesi (spinGroup mimarisi)
+11. Ulke tiklama + odaklama animasyonu
+12. Turkiye girisi + sayfa gecis animasyonu
+13. Ulke ismi etiketleri (eklendi, sonra kaldirildi)
+14. Odaklama bug fix: cameraFacingVector dinamik camera pozisyonuyla hesaplandi
+15. Globe sagpanel: tum dunya ulkeleri GeoJSON'dan dinamik dropdown
 
 ## Onemli Bug Notu
 

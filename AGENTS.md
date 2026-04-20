@@ -99,8 +99,11 @@ npm run preview
 ## Sonraki Muhtemel Isler
 
 - Harita label offsetlerini tek tek duzeltmek.
-- Select yerine autocomplete/combobox yapmak.
+- Ulke secimi icin select yerine autocomplete/combobox yapmak.
 - Hava durumu ikonlari eklemek.
 - Open-Meteo'dan yagis ihtimali ve ruzgar bilgisi almak.
 - Test altyapisi ve gorsel regression kontrolu eklemek.
 - Coklu dil icin eksik ceviri/hardcoded metin taramasi eklemek.
+- Globe'da GeoJSON fetch'ini tek noktaya tasimak (su an dropdown + border render ayri ayri fetch ediyor).
+- `CountryGlobeEntry.tsx` dosyasini Three.js logicini ayri module tasiyarak bölmek.
+- Globe ulke odaklama animasyonunu `forwardRef + useImperativeHandle` ile imperative API'ye tasimak.
