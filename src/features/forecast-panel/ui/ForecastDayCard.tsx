@@ -27,6 +27,17 @@ export function ForecastDayCard({ day, isSelected = false }: ForecastDayCardProp
         <p className="mt-1 truncate text-xs text-[var(--color-text-muted)]">
           {getWeatherConditionLabel(day.weatherCode, t)}
         </p>
+        <p className="mt-1 truncate text-[11px] text-[var(--color-text-muted)]">
+          {t('forecast.precipitationProbability')}{' '}
+          <span className="font-semibold text-[var(--color-text)]">
+            {formatProbability(day.precipitationProbabilityMax)}
+          </span>
+          {' · '}
+          {t('forecast.wind')}{' '}
+          <span className="font-semibold text-[var(--color-text)]">
+            {formatWindSpeed(day.windSpeedMax, t('forecast.kmh'))}
+          </span>
+        </p>
       </div>
 
       <div className="text-right">
@@ -40,4 +51,14 @@ export function ForecastDayCard({ day, isSelected = false }: ForecastDayCardProp
       </div>
     </li>
   )
+}
+
+function formatProbability(value?: number) {
+  return value !== undefined ? `%${Math.round(value)}` : '--'
+}
+
+function formatWindSpeed(value: number | undefined, unit: string) {
+  if (value === undefined) return '--'
+
+  return `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`
 }

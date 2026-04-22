@@ -39,6 +39,33 @@ export function ForecastPanel({
     isCurrentDay && forecast?.currentWeatherCode !== undefined
       ? forecast.currentWeatherCode
       : selectedDay?.weatherCode
+  const apparentTemperature =
+    isCurrentDay && forecast?.currentApparentTemperature !== undefined
+      ? forecast.currentApparentTemperature
+      : selectedDay?.apparentTemperatureMax
+  const precipitationValue =
+    isCurrentDay && forecast?.currentPrecipitation !== undefined
+      ? formatPrecipitation(forecast.currentPrecipitation, t('forecast.millimeter'))
+      : formatProbability(selectedDay?.precipitationProbabilityMax)
+  const precipitationLabel = isCurrentDay
+    ? t('forecast.precipitation')
+    : t('forecast.precipitationProbability')
+  const windSpeed =
+    isCurrentDay && forecast?.currentWindSpeed !== undefined
+      ? forecast.currentWindSpeed
+      : selectedDay?.windSpeedMax
+  const windDirection =
+    isCurrentDay && forecast?.currentWindDirection !== undefined
+      ? forecast.currentWindDirection
+      : selectedDay?.windDirectionDominant
+  const windGust =
+    isCurrentDay && forecast?.currentWindGusts !== undefined
+      ? forecast.currentWindGusts
+      : selectedDay?.windGustsMax
+  const relativeHumidity =
+    isCurrentDay && forecast?.currentRelativeHumidity !== undefined
+      ? forecast.currentRelativeHumidity
+      : selectedDay?.relativeHumidityMean
   const temperatureLabel = isCurrentDay
     ? t('forecast.current')
     : t('forecast.selectedDay')
@@ -90,6 +117,39 @@ export function ForecastPanel({
               )} ${t('forecast.max')}`
             : t('forecast.waiting')}
         </p>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <WeatherMetricCard
+            label={t('forecast.feelsLike')}
+            value={
+              apparentTemperature !== undefined
+                ? formatTemperature(apparentTemperature)
+                : '--'
+            }
+          />
+          <WeatherMetricCard
+            label={t('forecast.humidity')}
+            value={formatProbability(relativeHumidity)}
+          />
+          <WeatherMetricCard
+            label={precipitationLabel}
+            value={precipitationValue}
+          />
+          <WeatherMetricCard
+            label={t('forecast.wind')}
+            meta={
+              windDirection !== undefined
+                ? formatWindDirection(windDirection, t)
+                : undefined
+            }
+            value={formatWindSpeed(windSpeed, t('forecast.kmh'))}
+          />
+          <WeatherMetricCard
+            className="col-span-2"
+            label={t('forecast.windGust')}
+            value={formatWindSpeed(windGust, t('forecast.kmh'))}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)]">
@@ -152,6 +212,41 @@ export function ForecastPanel({
   )
 }
 
+function WeatherMetricCard({
+  className = '',
+  label,
+  meta,
+  value,
+}: {
+  className?: string
+  label: string
+  meta?: string
+  value: string
+}) {
+  return (
+    <div
+      className={[
+        'min-w-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3',
+        className,
+      ].join(' ')}
+    >
+      <p className="truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+        {label}
+      </p>
+      <div className="mt-2 flex items-baseline justify-between gap-2">
+        <p className="truncate font-mono text-lg font-semibold text-[var(--color-text)]">
+          {value}
+        </p>
+        {meta ? (
+          <span className="shrink-0 text-xs font-semibold text-[var(--color-accent)]">
+            {meta}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 border-r border-[var(--color-border)] p-4 last:border-r-0">
@@ -163,4 +258,39 @@ function Metric({ label, value }: { label: string; value: string }) {
       </p>
     </div>
   )
+}
+
+function formatProbability(value?: number) {
+  return value !== undefined ? `%${Math.round(value)}` : '--'
+}
+
+function formatPrecipitation(value: number | undefined, unit: string) {
+  return value !== undefined ? `${roundMetric(value)} ${unit}` : '--'
+}
+
+function formatWindSpeed(value: number | undefined, unit: string) {
+  return value !== undefined ? `${roundMetric(value)} ${unit}` : '--'
+}
+
+function formatWindDirection(
+  degrees: number,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  const directions = [
+    'forecast.directionNorth',
+    'forecast.directionNorthEast',
+    'forecast.directionEast',
+    'forecast.directionSouthEast',
+    'forecast.directionSouth',
+    'forecast.directionSouthWest',
+    'forecast.directionWest',
+    'forecast.directionNorthWest',
+  ] as const
+  const index = Math.round((((degrees % 360) + 360) % 360) / 45) % directions.length
+
+  return `${t(directions[index])} ${Math.round(degrees)}°`
+}
+
+function roundMetric(value: number) {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(1)
 }
