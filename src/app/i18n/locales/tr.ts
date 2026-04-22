@@ -6,6 +6,7 @@ export const tr = {
     target: 'Hedef: Turkiye',
     globeFallback: 'Dunya sistemi yukleniyor',
     backToGlobe: 'Dunya gorunumune don',
+    backToGlobeShort: 'Dunya',
     activeRegion: 'Aktif bolge',
   },
   attribution: {
@@ -35,6 +36,7 @@ export const tr = {
     coverage: 'Kapsam',
     provinceNodes: '81 il dugumu',
     enterMap: 'Turkiye haritasina gec',
+    enterMapShort: 'Haritaya gec',
     approachingMap: 'Turkiye haritasina yaklasiliyor',
     preparingLayer: '81 il tahmin katmani hazirlaniyor',
     countryComingSoon: 'Yakininda geliyor',

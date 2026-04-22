@@ -15,27 +15,127 @@ type GeoJsonFeature = {
   properties: { ISO_A2: string; NAME: string }
 }
 
-type GeoCountry = {
-  id: string
-  name: string
-  center: { latitude: number; longitude: number }
+type GlobePolygon = {
+  holes: number[][][]
+  outerRing: number[][]
 }
 
-function computeCentroid(feature: GeoJsonFeature): { latitude: number; longitude: number } {
-  const geom = feature.geometry
-  if (!geom) return { latitude: 0, longitude: 0 }
-  const polys: number[][][][] =
-    geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
-  const mainPoly = polys.reduce((a, b) => (a[0].length > b[0].length ? a : b))
-  const ring = mainPoly[0]
-  let sumLon = 0, sumLat = 0
-  for (const [lon, lat] of ring) {
-    sumLon += lon
-    sumLat += lat
+type NormalizedGlobeCountry = {
+  center: { latitude: number; longitude: number }
+  id: string
+  name: string
+  polygons: GlobePolygon[]
+}
+
+const CURATED_COUNTRY_CENTERS: Record<string, { latitude: number; longitude: number }> = {
+  TR: { latitude: 39.1, longitude: 35.2 },
+}
+
+function normalizeGlobeCountries(features: GeoJsonFeature[]): NormalizedGlobeCountry[] {
+  const countriesById = new Map<string, Omit<NormalizedGlobeCountry, 'center'> & {
+    center?: NormalizedGlobeCountry['center']
+  }>()
+
+  for (const feature of features) {
+    const id = feature.properties.ISO_A2
+
+    if (!feature.geometry || !id || id === '-99') {
+      continue
+    }
+
+    const polygons = getFeaturePolygons(feature)
+
+    if (polygons.length === 0) {
+      continue
+    }
+
+    const existing = countriesById.get(id)
+    if (existing) {
+      existing.polygons.push(...polygons)
+    } else {
+      countriesById.set(id, {
+        id,
+        name: feature.properties.NAME,
+        polygons,
+      })
+    }
   }
+
+  return Array.from(countriesById.values())
+    .map((country) => ({
+      ...country,
+      center: CURATED_COUNTRY_CENTERS[country.id] ?? computeCountryCenter(country.polygons),
+    }))
+    .sort((a, b) => {
+      if (a.id === 'TR') return -1
+      if (b.id === 'TR') return 1
+      return a.name.localeCompare(b.name)
+    })
+}
+
+function getFeaturePolygons(feature: GeoJsonFeature): GlobePolygon[] {
+  const geom = feature.geometry
+  if (!geom) return []
+
+  const rawPolygons: number[][][][] =
+    geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates
+
+  return rawPolygons
+    .filter((polygon) => polygon[0]?.length >= 4)
+    .map((polygon) => ({
+      outerRing: polygon[0],
+      holes: polygon.slice(1).filter((ring) => ring.length >= 4),
+    }))
+}
+
+function computeCountryCenter(polygons: GlobePolygon[]) {
+  const largestPolygon = polygons.reduce((largest, polygon) => {
+    return Math.abs(ringSignedArea(polygon.outerRing)) > Math.abs(ringSignedArea(largest.outerRing))
+      ? polygon
+      : largest
+  }, polygons[0])
+
+  return ringCentroid(largestPolygon.outerRing)
+}
+
+function ringSignedArea(ring: number[][]) {
+  let area = 0
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    area += ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1]
+  }
+  return area / 2
+}
+
+function ringCentroid(ring: number[][]) {
+  let areaFactor = 0
+  let centroidLon = 0
+  let centroidLat = 0
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [lonA, latA] = ring[j]
+    const [lonB, latB] = ring[i]
+    const cross = lonA * latB - lonB * latA
+    areaFactor += cross
+    centroidLon += (lonA + lonB) * cross
+    centroidLat += (latA + latB) * cross
+  }
+
+  if (Math.abs(areaFactor) < 0.000001) {
+    let sumLon = 0
+    let sumLat = 0
+    for (const [lon, lat] of ring) {
+      sumLon += lon
+      sumLat += lat
+    }
+    return {
+      latitude: sumLat / ring.length,
+      longitude: sumLon / ring.length,
+    }
+  }
+
   return {
-    latitude: sumLat / ring.length,
-    longitude: sumLon / ring.length,
+    latitude: centroidLat / (3 * areaFactor),
+    longitude: centroidLon / (3 * areaFactor),
   }
 }
 
@@ -53,7 +153,7 @@ export function CountryGlobeEntry({
   const { t } = useTranslation()
   const [isEntering, setIsEntering] = useState(false)
   const [showComingSoon, setShowComingSoon] = useState(false)
-  const [geoCountries, setGeoCountries] = useState<GeoCountry[]>([])
+  const [geoCountries, setGeoCountries] = useState<NormalizedGlobeCountry[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
@@ -67,19 +167,7 @@ export function CountryGlobeEntry({
     fetch('/countries-110m.geojson')
       .then((r) => r.json())
       .then((geojson: { features: GeoJsonFeature[] }) => {
-        const loaded: GeoCountry[] = geojson.features
-          .filter((f) => f.geometry && f.properties.ISO_A2 && f.properties.ISO_A2 !== '-99')
-          .map((f) => ({
-            id: f.properties.ISO_A2,
-            name: f.properties.NAME,
-            center: computeCentroid(f),
-          }))
-          .sort((a, b) => {
-            if (a.id === 'TR') return -1
-            if (b.id === 'TR') return 1
-            return a.name.localeCompare(b.name)
-          })
-        setGeoCountries(loaded)
+        setGeoCountries(normalizeGlobeCountries(geojson.features))
       })
       .catch(() => {})
   }, [])
@@ -159,7 +247,7 @@ export function CountryGlobeEntry({
   return (
     <div
       className="relative bg-[#0b0e14]"
-      style={{ minHeight: 'calc(100vh - 4.5rem)' }}
+      style={{ minHeight: 'calc(100dvh - 4rem)' }}
     >
       {/* Globe — own overflow-hidden wrapper to clip scale animation */}
       <div className="absolute inset-0 overflow-hidden">
@@ -170,6 +258,7 @@ export function CountryGlobeEntry({
           ].join(' ')}
         >
           <RealisticGlobe
+            countries={geoCountries}
             focusTriggerRef={focusTriggerRef}
             isEntering={isEntering}
             onClickCountry={handleGlobeClick}
@@ -179,7 +268,7 @@ export function CountryGlobeEntry({
 
       {/* Coming-soon toast */}
       {showComingSoon && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-8 z-50 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 bottom-[7rem] z-50 flex justify-center px-4 md:bottom-8">
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/90 px-5 py-3 shadow-[var(--color-panel-shadow)] backdrop-blur-xl">
             <p className="text-sm font-semibold text-[var(--color-text)]">{t('globe.countryComingSoon')}</p>
             <p className="mt-0.5 text-center text-xs text-[var(--color-text-muted)]">
@@ -196,7 +285,7 @@ export function CountryGlobeEntry({
         onClick={() => setPanelOpen((v) => !v)}
         className={[
           'absolute top-1/2 z-30 -translate-y-1/2',
-          'flex h-12 w-8 items-center justify-center',
+          'hidden h-12 w-8 items-center justify-center md:flex',
           'rounded-l-xl border border-r-0',
           'border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-xl',
           'text-[var(--color-text-muted)] transition-[right] duration-300 ease-in-out',
@@ -216,32 +305,75 @@ export function CountryGlobeEntry({
       {/* Floating panel */}
       <aside
         className={[
-          'absolute bottom-0 right-0 top-0 z-20 flex flex-col',
-          'w-[300px] sm:w-[360px]',
-          'border-l border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-2xl',
+          'absolute bottom-0 left-0 right-0 z-20 flex max-h-[min(56dvh,30rem)] flex-col',
+          'w-full rounded-t-2xl border-t border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--color-panel-shadow)]',
+          'md:left-auto md:top-0 md:max-h-none md:w-[360px] md:rounded-none md:border-l md:border-t-0 md:bg-[var(--color-surface)]/95 md:backdrop-blur-2xl',
           'transition-transform duration-300 ease-in-out',
-          panelOpen ? 'translate-x-0' : 'translate-x-full',
+          panelOpen
+            ? 'translate-y-0 md:translate-x-0'
+            : 'translate-y-0 md:translate-x-full',
         ].join(' ')}
       >
-        <div className="flex flex-1 flex-col px-5 py-6 sm:px-7 sm:py-8">
+        <button
+          type="button"
+          aria-label={t(panelOpen ? 'globe.collapsePanel' : 'globe.expandPanel')}
+          onClick={() => setPanelOpen((v) => !v)}
+          className="flex shrink-0 flex-col items-center px-5 pb-2 pt-3 text-[var(--color-text-muted)] md:hidden"
+        >
+          <span className="h-1 w-11 rounded-full bg-[var(--color-border-strong)]" />
+          <span className="sr-only">
+            {panelOpen ? t('globe.collapsePanel') : t('globe.expandPanel')}
+          </span>
+        </button>
+
+        <div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-4 md:hidden">
+          <div className="min-w-0">
+            <p className="truncate text-xl font-bold leading-tight tracking-tight text-[var(--color-text)]">
+              {selectedGeoCountry?.name ?? t('globe.turkeyName')}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-[var(--color-accent)]">
+              {isTurkey ? t('globe.ankaraFocus') : t('globe.countryComingSoon')}
+            </p>
+          </div>
+          <button
+            className={[
+              'h-10 shrink-0 rounded-lg px-4 text-xs font-bold transition',
+              isTurkey
+                ? 'bg-[var(--color-accent)] text-white shadow-lg shadow-[var(--color-accent)]/20 active:scale-[0.98]'
+                : 'cursor-not-allowed border border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] opacity-50',
+            ].join(' ')}
+            disabled={!isTurkey}
+            type="button"
+            onClick={isTurkey ? enterCountry : undefined}
+          >
+            {isTurkey ? t('globe.enterMapShort') : t('globe.countryComingSoon')}
+          </button>
+        </div>
+
+        <div
+          className={[
+            'flex-1 flex-col overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-0 md:px-7 md:py-8',
+            panelOpen ? 'flex' : 'hidden md:flex',
+          ].join(' ')}
+        >
         {/* Section label */}
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+        <p className="hidden text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)] md:block">
           {t('globe.countryCommand')}
         </p>
 
         {/* Country name */}
-        <h2 className="mt-3 truncate text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl">
+        <h2 className="mt-4 hidden truncate text-2xl font-bold tracking-tight text-[var(--color-text)] md:block">
           {selectedGeoCountry?.name ?? t('globe.turkeyName')}
         </h2>
-        <p className="mt-1.5 text-sm font-medium text-[var(--color-accent)]">
+        <p className="mt-1.5 hidden text-sm font-medium text-[var(--color-accent)] md:block">
           {isTurkey ? t('globe.ankaraFocus') : t('globe.countryComingSoon')}
         </p>
 
         {/* Divider */}
-        <div className="mt-6 h-px bg-[var(--color-border)]" />
+        <div className="hidden h-px bg-[var(--color-border)] md:mt-6 md:block" />
 
         {/* Country selector */}
-        <div className="mt-6">
+        <div className="mt-2 md:mt-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
             {t('globe.countrySelect')}
           </p>
@@ -363,10 +495,12 @@ export function CountryGlobeEntry({
 }
 
 function RealisticGlobe({
+  countries,
   focusTriggerRef,
   isEntering,
   onClickCountry,
 }: {
+  countries: NormalizedGlobeCountry[]
   focusTriggerRef: React.RefObject<{ lat: number; lon: number } | null>
   isEntering: boolean
   onClickCountry: (iso2: string) => void
@@ -471,41 +605,25 @@ function RealisticGlobe({
       focusStartTime = undefined
     }
 
-    const loadedFeatures: GeoJsonFeature[] = []
-    let borderMounted = true
-    fetch('/countries-110m.geojson')
-      .then((res) => res.json())
-      .then((geojson: { features: GeoJsonFeature[] }) => {
-        if (!borderMounted) return
-        for (const feature of geojson.features) {
-          loadedFeatures.push(feature)
-          const geom = feature.geometry
-          if (!geom) continue
-          const rings: number[][][] =
-            geom.type === 'Polygon'
-              ? geom.coordinates
-              : geom.type === 'MultiPolygon'
-                ? geom.coordinates.flat(1)
-                : []
-          for (const ring of rings) {
-            const positions: number[] = []
-            for (const [lon, lat] of ring) {
-              const v = latLonToSphereVector(lat, lon).multiplyScalar(1.483)
-              positions.push(v.x, v.y, v.z)
-            }
-            if (positions.length < 6) continue
-            const lineGeo = new LineGeometry()
-            lineGeo.setPositions(positions)
-            const line = new Line2(lineGeo, borderMaterial)
-            line.computeLineDistances()
-            lineGeometries.push(lineGeo)
-            spinGroup.add(line)
+    for (const country of countries) {
+      for (const polygon of country.polygons) {
+        const rings = [polygon.outerRing, ...polygon.holes]
+        for (const ring of rings) {
+          const positions: number[] = []
+          for (const [lon, lat] of ring) {
+            const v = latLonToSphereVector(lat, lon).multiplyScalar(1.483)
+            positions.push(v.x, v.y, v.z)
           }
-
-          // Country borders rendered above; skip labels (removed per UX decision)
+          if (positions.length < 6) continue
+          const lineGeo = new LineGeometry()
+          lineGeo.setPositions(positions)
+          const line = new Line2(lineGeo, borderMaterial)
+          line.computeLineDistances()
+          lineGeometries.push(lineGeo)
+          spinGroup.add(line)
         }
-      })
-      .catch(() => { /* borders are decorative – fail silently */ })
+      }
+    }
 
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.autoRotate = true
@@ -520,11 +638,27 @@ function RealisticGlobe({
     const resize = () => {
       const width = container.clientWidth
       const height = container.clientHeight
+      const isMobileViewport = width < 768
 
+      camera.fov = isMobileViewport ? 42 : 30
       camera.aspect = width / Math.max(height, 1)
+      if (!isMobileViewport) {
+        camera.clearViewOffset()
+      }
       camera.updateProjectionMatrix()
+
+      controls.minDistance = isMobileViewport ? 7.2 : 4.7
+      controls.maxDistance = isMobileViewport ? 9.4 : 7.2
+      controls.zoomSpeed = isMobileViewport ? 0.45 : 0.55
+      earthGroup.position.y = isMobileViewport ? 0.02 : 0
+
+      if (!isFocusing && !isEnteringRef.current) {
+        camera.position.setLength(isMobileViewport ? 8.4 : 6.1)
+      }
+
       renderer.setSize(width, height, false)
       borderMaterial.resolution.set(width, height)
+      controls.update()
     }
     const resizeObserver = new ResizeObserver(resize)
     resizeObserver.observe(container)
@@ -554,19 +688,13 @@ function RealisticGlobe({
       const local = earthMesh.worldToLocal(hits[0].point.clone())
       const [lat, lon] = vectorToLatLon(local)
 
-      for (const feature of loadedFeatures) {
-        const geom = feature.geometry
-        if (!geom) continue
-        const polys: number[][][][] =
-          geom.type === 'Polygon'
-            ? [geom.coordinates]
-            : geom.coordinates
-        for (const poly of polys) {
-          if (pointInPolygon([lon, lat], poly[0])) {
+      for (const country of countries) {
+        for (const polygon of country.polygons) {
+          if (pointInGlobePolygon([lon, lat], polygon)) {
             // Trigger focus animation for every country click
             startFocusAnimation(hits[0].point)
             autoRotateEnabled = false
-            onClickCountryRef.current(feature.properties.ISO_A2)
+            onClickCountryRef.current(country.id)
             return
           }
         }
@@ -665,7 +793,6 @@ function RealisticGlobe({
 
     return () => {
       isRunning = false
-      borderMounted = false
       window.cancelAnimationFrame(animationFrameId)
       resizeObserver.disconnect()
       renderer.domElement.removeEventListener('mousedown', onMouseDown)
@@ -681,7 +808,7 @@ function RealisticGlobe({
       renderer.dispose()
       renderer.domElement.remove()
     }
-  }, [])
+  }, [countries])
 
   return (
     <div
@@ -730,6 +857,14 @@ function pointInPolygon(point: [number, number], ring: number[][]): boolean {
     if (intersect) inside = !inside
   }
   return inside
+}
+
+function pointInGlobePolygon(point: [number, number], polygon: GlobePolygon) {
+  if (!pointInPolygon(point, polygon.outerRing)) {
+    return false
+  }
+
+  return !polygon.holes.some((hole) => pointInPolygon(point, hole))
 }
 
 function GlassInfoRow({ label, value }: { label: string; value: string }) {
