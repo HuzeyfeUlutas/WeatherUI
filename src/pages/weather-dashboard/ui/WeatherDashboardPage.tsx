@@ -122,11 +122,23 @@ export function WeatherDashboardPage() {
     <Shell
       actions={
         <button
-          className="hidden rounded-md border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-muted)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] md:block"
+          className="inline-flex h-11 min-w-0 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] md:h-10 md:bg-transparent md:font-medium md:text-[var(--color-text-muted)]"
           onClick={() => setActiveView('globe')}
           type="button"
+          aria-label={t('app.backToGlobe')}
         >
-          {t('app.backToGlobe')}
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="md:hidden">{t('app.backToGlobeShort')}</span>
+          <span className="hidden md:inline">{t('app.backToGlobe')}</span>
         </button>
       }
       activeSection="regional"

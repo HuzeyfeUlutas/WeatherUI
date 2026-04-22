@@ -6,6 +6,7 @@ export const en = {
     target: 'Target: Turkiye',
     globeFallback: 'Loading globe system',
     backToGlobe: 'Back to globe',
+    backToGlobeShort: 'Globe',
     activeRegion: 'Active region',
   },
   attribution: {
@@ -35,6 +36,7 @@ export const en = {
     coverage: 'Coverage',
     provinceNodes: '81 province nodes',
     enterMap: 'Enter Turkiye map',
+    enterMapShort: 'Enter map',
     approachingMap: 'Approaching Turkiye map',
     preparingLayer: 'Preparing 81 province forecast layer',
     countryComingSoon: 'Coming soon',
