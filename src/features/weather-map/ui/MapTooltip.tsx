@@ -18,8 +18,8 @@ export function MapTooltip({
   const { t } = useTranslation()
 
   return (
-    <div className="pointer-events-none absolute left-4 top-4 z-20 min-w-52 rounded-lg border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_88%,transparent)] px-4 py-3 text-left shadow-[var(--color-panel-shadow)] backdrop-blur">
-      <div className="flex items-start justify-between gap-4">
+    <div className="absolute left-4 right-4 top-4 z-20 rounded-lg border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_92%,transparent)] px-4 py-3 text-left shadow-[var(--color-panel-shadow)] backdrop-blur md:right-auto md:min-w-[22rem]">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold text-[var(--color-text-muted)]">
             {t('forecast.activeProvince')}

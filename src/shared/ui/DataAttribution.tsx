@@ -5,6 +5,22 @@ export function DataAttribution() {
     <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
       <Trans
         components={{
+          boundaryLicense: (
+            <a
+              className="font-medium text-[var(--color-accent)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              href="https://opendatacommons.org/licenses/odbl/1-0/"
+              rel="noreferrer"
+              target="_blank"
+            />
+          ),
+          boundarySource: (
+            <a
+              className="font-medium text-[var(--color-accent)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+              href="https://www.geoboundaries.org/"
+              rel="noreferrer"
+              target="_blank"
+            />
+          ),
           license: (
             <a
               className="font-medium text-[var(--color-accent)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"

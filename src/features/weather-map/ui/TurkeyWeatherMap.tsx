@@ -119,7 +119,7 @@ export function TurkeyWeatherMap({
       ) : null}
 
       <div
-        className="relative z-10 overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
+        className="relative z-10 overflow-x-auto overscroll-x-contain pt-28 [scrollbar-width:thin] md:pt-24"
         ref={mapScrollRef}
       >
         <svg

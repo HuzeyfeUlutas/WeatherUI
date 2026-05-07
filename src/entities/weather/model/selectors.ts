@@ -1,7 +1,19 @@
-import type { ProvinceForecast, WeatherTemperatureSummary } from './types'
+import type {
+  DistrictForecast,
+  ForecastDay,
+  ProvinceForecast,
+  WeatherConditionCode,
+  WeatherTemperatureSummary,
+} from './types'
+
+type ForecastWithWeatherDays = {
+  currentTemperature?: number
+  currentWeatherCode?: WeatherConditionCode
+  days: ForecastDay[]
+}
 
 export function getForecastDayByDate(
-  forecast: ProvinceForecast | undefined,
+  forecast: ForecastWithWeatherDays | undefined,
   selectedDate?: string,
 ) {
   if (!forecast?.days.length) {
@@ -14,13 +26,13 @@ export function getForecastDayByDate(
 }
 
 export function getTodayTemperatureSummary(
-  forecast?: ProvinceForecast,
+  forecast?: ForecastWithWeatherDays,
 ): WeatherTemperatureSummary | undefined {
   return getTemperatureSummaryForDate(forecast)
 }
 
 export function getTemperatureSummaryForDate(
-  forecast?: ProvinceForecast,
+  forecast?: ForecastWithWeatherDays,
   selectedDate?: string,
 ): WeatherTemperatureSummary | undefined {
   const selectedDay = getForecastDayByDate(forecast, selectedDate)
@@ -62,6 +74,27 @@ export function getTemperatureSummariesByProvinceId(
       const summary = getTemperatureSummaryForDate(forecast, selectedDate)
 
       return summary ? [[forecast.provinceId, summary]] : []
+    }),
+  )
+}
+
+export function indexForecastsByDistrictId(
+  forecasts: DistrictForecast[],
+): Record<string, DistrictForecast> {
+  return Object.fromEntries(
+    forecasts.map((forecast) => [forecast.districtId, forecast]),
+  )
+}
+
+export function getTemperatureSummariesByDistrictId(
+  forecasts: DistrictForecast[],
+  selectedDate?: string,
+): Record<string, WeatherTemperatureSummary> {
+  return Object.fromEntries(
+    forecasts.flatMap((forecast) => {
+      const summary = getTemperatureSummaryForDate(forecast, selectedDate)
+
+      return summary ? [[forecast.districtId, summary]] : []
     }),
   )
 }
