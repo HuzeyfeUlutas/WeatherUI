@@ -1,10 +1,22 @@
 import { lazy, Suspense, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  DISTRICTS_BY_ID,
+  DISTRICTS_BY_PROVINCE_ID,
+  getDefaultDistrictIdForProvince,
+} from '../../../entities/district'
 import { PROVINCES, PROVINCES_BY_ID } from '../../../entities/province'
 import {
+  getTemperatureSummariesByDistrictId,
   getTemperatureSummariesByProvinceId,
+  indexForecastsByDistrictId,
   indexForecastsByProvinceId,
 } from '../../../entities/weather'
+import {
+  DistrictMap,
+  DistrictForecastPanel,
+  useDistrictForecasts,
+} from '../../../features/district-map'
 import { ForecastDateSelector } from '../../../features/forecast-date-selector'
 import { ForecastPanel } from '../../../features/forecast-panel'
 import { ProvinceSearch } from '../../../features/province-search'
@@ -31,18 +43,37 @@ export function WeatherDashboardPage() {
   )
   const provinceForecastsQuery = useProvinceForecasts(provinceIds)
   const activeView = useAppStore((state) => state.activeView)
+  const hoveredDistrictId = useAppStore((state) => state.hoveredDistrictId)
   const hoveredProvinceId = useAppStore((state) => state.hoveredProvinceId)
   const selectedCountryId = useAppStore((state) => state.selectedCountryId)
+  const selectedDistrictId = useAppStore((state) => state.selectedDistrictId)
   const selectedForecastDate = useAppStore(
     (state) => state.selectedForecastDate,
   )
   const selectedProvinceId = useAppStore((state) => state.selectedProvinceId)
+  const districtIds = useMemo(
+    () =>
+      (DISTRICTS_BY_PROVINCE_ID[selectedProvinceId] ?? []).map(
+        (district) => district.id,
+      ),
+    [selectedProvinceId],
+  )
+  const districtForecastsQuery = useDistrictForecasts(
+    districtIds,
+    activeView === 'district-map',
+  )
   const setActiveView = useAppStore((state) => state.setActiveView)
+  const setHoveredDistrictId = useAppStore(
+    (state) => state.setHoveredDistrictId,
+  )
   const setHoveredProvinceId = useAppStore(
     (state) => state.setHoveredProvinceId,
   )
   const setSelectedCountryId = useAppStore(
     (state) => state.setSelectedCountryId,
+  )
+  const setSelectedDistrictId = useAppStore(
+    (state) => state.setSelectedDistrictId,
   )
   const setSelectedForecastDate = useAppStore(
     (state) => state.setSelectedForecastDate,
@@ -51,11 +82,21 @@ export function WeatherDashboardPage() {
     (state) => state.setSelectedProvinceId,
   )
   const selectedProvince = PROVINCES_BY_ID[selectedProvinceId]
+  const defaultDistrictId = getDefaultDistrictIdForProvince(selectedProvinceId)
+  const selectedDistrict =
+    DISTRICTS_BY_ID[selectedDistrictId]?.provinceId === selectedProvinceId
+      ? DISTRICTS_BY_ID[selectedDistrictId]
+      : DISTRICTS_BY_ID[defaultDistrictId]
   const forecastsByProvinceId = useMemo(
     () => indexForecastsByProvinceId(provinceForecastsQuery.data ?? []),
     [provinceForecastsQuery.data],
   )
   const selectedForecast = forecastsByProvinceId[selectedProvinceId]
+  const forecastsByDistrictId = useMemo(
+    () => indexForecastsByDistrictId(districtForecastsQuery.data ?? []),
+    [districtForecastsQuery.data],
+  )
+  const selectedDistrictForecast = forecastsByDistrictId[selectedDistrict.id]
   const forecastDateExists = selectedForecast?.days.some(
     (day) => day.date === selectedForecastDate,
   )
@@ -77,8 +118,23 @@ export function WeatherDashboardPage() {
     [provinceForecastsQuery.data, activeForecastDate],
   )
   const selectedTemperature = temperaturesByProvinceId[selectedProvinceId]
+  const temperaturesByDistrictId = useMemo(
+    () =>
+      getTemperatureSummariesByDistrictId(
+        districtForecastsQuery.data ?? [],
+        activeForecastDate,
+      ),
+    [districtForecastsQuery.data, activeForecastDate],
+  )
   const retryForecasts = () => {
     void provinceForecastsQuery.refetch()
+  }
+  const retryDistrictForecasts = () => {
+    void districtForecastsQuery.refetch()
+  }
+  const openDistrictMap = () => {
+    setSelectedDistrictId(defaultDistrictId)
+    setActiveView('district-map')
   }
 
   useEffect(() => {
@@ -91,6 +147,17 @@ export function WeatherDashboardPage() {
       setSelectedForecastDate(firstDate)
     }
   }, [selectedForecast?.days, selectedForecastDate, setSelectedForecastDate])
+
+  useEffect(() => {
+    if (DISTRICTS_BY_ID[selectedDistrictId]?.provinceId !== selectedProvinceId) {
+      setSelectedDistrictId(defaultDistrictId)
+    }
+  }, [
+    defaultDistrictId,
+    selectedDistrictId,
+    selectedProvinceId,
+    setSelectedDistrictId,
+  ])
 
   if (activeView === 'globe') {
     return (
@@ -114,6 +181,90 @@ export function WeatherDashboardPage() {
             selectedCountryId={selectedCountryId}
           />
         </Suspense>
+      </Shell>
+    )
+  }
+
+  if (activeView === 'district-map') {
+    return (
+      <Shell
+        actions={
+          <button
+            aria-label={t('districtMap.backToTurkey')}
+            className="inline-flex h-11 min-w-0 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] md:h-10 md:bg-transparent md:font-medium md:text-[var(--color-text-muted)]"
+            onClick={() => setActiveView('country-map')}
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>{t('districtMap.backToTurkey')}</span>
+          </button>
+        }
+        activeSection="regional"
+        footerMeta={
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <ForecastDateSelector
+              days={selectedDistrictForecast?.days ?? []}
+              onSelectDate={setSelectedForecastDate}
+              selectedDate={activeForecastDate}
+            />
+            <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-right shadow-sm">
+              <p className="text-xs font-medium text-[var(--color-text-muted)]">
+                {t('districtMap.activeDistrict')}
+              </p>
+              <p className="text-sm font-semibold text-[var(--color-text)]">
+                {selectedDistrict.name}{' '}
+                <span className="text-[var(--color-accent)]">
+                  {temperaturesByDistrictId[selectedDistrict.id]
+                    ? formatTemperature(
+                        temperaturesByDistrictId[selectedDistrict.id].current,
+                      )
+                    : '--'}
+                </span>
+              </p>
+            </div>
+          </div>
+        }
+        title={t('districtMap.title')}
+      >
+        <div className="grid flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--color-panel-shadow)]">
+              <DistrictMap
+                hoveredDistrictId={hoveredDistrictId}
+                isError={districtForecastsQuery.isError}
+                onBackToProvinceMap={() => setActiveView('country-map')}
+                onHoverDistrict={setHoveredDistrictId}
+                onRetry={retryDistrictForecasts}
+                onSelectDistrict={setSelectedDistrictId}
+                province={selectedProvince}
+                selectedDistrictId={selectedDistrict.id}
+                temperaturesByDistrictId={temperaturesByDistrictId}
+              />
+            </div>
+
+            <TemperatureLegend />
+          </div>
+
+          <div className="space-y-4">
+            <DistrictForecastPanel
+              district={selectedDistrict}
+              forecast={selectedDistrictForecast}
+              isError={districtForecastsQuery.isError}
+              isLoading={districtForecastsQuery.isLoading}
+              onRetry={retryDistrictForecasts}
+              selectedDate={activeForecastDate}
+            />
+          </div>
+        </div>
       </Shell>
     )
   }
@@ -191,14 +342,15 @@ export function WeatherDashboardPage() {
               selectedProvinceId={selectedProvinceId}
             />
 
-            <ForecastPanel
-              forecast={selectedForecast}
-              isError={provinceForecastsQuery.isError}
-              isLoading={provinceForecastsQuery.isLoading}
-              onRetry={retryForecasts}
-              province={selectedProvince}
-              selectedDate={activeForecastDate}
-            />
+              <ForecastPanel
+                forecast={selectedForecast}
+                isError={provinceForecastsQuery.isError}
+                isLoading={provinceForecastsQuery.isLoading}
+                onRetry={retryForecasts}
+                onOpenDistrictMap={openDistrictMap}
+                province={selectedProvince}
+                selectedDate={activeForecastDate}
+              />
         </div>
       </div>
     </Shell>

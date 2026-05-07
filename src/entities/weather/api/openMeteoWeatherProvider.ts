@@ -3,7 +3,13 @@ import {
   type Province,
   type ProvinceId,
 } from '../../province'
+import {
+  DISTRICTS_BY_ID,
+  type District,
+  type DistrictId,
+} from '../../district'
 import type {
+  DistrictForecast,
   ForecastDay,
   ProvinceForecast,
   WeatherProvider,
@@ -55,13 +61,20 @@ function chunkItems<T>(items: T[], chunkSize: number): T[][] {
   return chunks
 }
 
-function createForecastUrl(provinces: Province[]): string {
+type ForecastLocation = {
+  coordinates: {
+    latitude: number
+    longitude: number
+  }
+}
+
+function createForecastUrl(locations: ForecastLocation[]): string {
   const params = new URLSearchParams({
-    latitude: provinces
-      .map((province) => province.coordinates.latitude.toString())
+    latitude: locations
+      .map((location) => location.coordinates.latitude.toString())
       .join(','),
-    longitude: provinces
-      .map((province) => province.coordinates.longitude.toString())
+    longitude: locations
+      .map((location) => location.coordinates.longitude.toString())
       .join(','),
     current:
       'temperature_2m,weather_code,apparent_temperature,relative_humidity_2m,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m',
@@ -134,6 +147,21 @@ function normalizeProvinceForecast(
   }
 }
 
+function normalizeDistrictForecast(
+  districtId: DistrictId,
+  response: OpenMeteoForecastResponse,
+): DistrictForecast {
+  const { provinceId: _provinceId, ...forecast } = normalizeProvinceForecast(
+    '06',
+    response,
+  )
+
+  return {
+    ...forecast,
+    districtId,
+  }
+}
+
 async function fetchForecastChunk(
   provinces: Province[],
 ): Promise<ProvinceForecast[]> {
@@ -161,6 +189,32 @@ export const OpenMeteoWeatherProvider: WeatherProvider = {
       .filter((province): province is Province => province !== undefined)
     const chunks = chunkItems(provinces, REQUEST_CHUNK_SIZE)
     const forecasts = await Promise.all(chunks.map(fetchForecastChunk))
+
+    return forecasts.flat()
+  },
+  async getDistrictForecasts(districtIds) {
+    const districts = districtIds
+      .map((districtId) => DISTRICTS_BY_ID[districtId])
+      .filter((district): district is District => district !== undefined)
+    const chunks = chunkItems(districts, REQUEST_CHUNK_SIZE)
+    const forecasts = await Promise.all(
+      chunks.map(async (districtChunk) => {
+        const response = await fetch(createForecastUrl(districtChunk))
+
+        if (!response.ok) {
+          throw new Error(`Open-Meteo istegi basarisiz: ${response.status}`)
+        }
+
+        const json = (await response.json()) as
+          | OpenMeteoForecastResponse
+          | OpenMeteoForecastResponse[]
+        const responses = Array.isArray(json) ? json : [json]
+
+        return districtChunk.map((district, index) =>
+          normalizeDistrictForecast(district.id, responses[index] ?? {}),
+        )
+      }),
+    )
 
     return forecasts.flat()
   },

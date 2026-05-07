@@ -1,4 +1,5 @@
 import type { ProvinceId } from '../../province'
+import type { DistrictId } from '../../district'
 
 export type WeatherProviderId = 'open-meteo' | 'mgm'
 
@@ -43,9 +44,16 @@ export type ProvinceForecast = {
   days: ForecastDay[]
 }
 
+export type DistrictForecast = Omit<ProvinceForecast, 'provinceId'> & {
+  districtId: DistrictId
+}
+
 export type WeatherProvider = {
   id: WeatherProviderId
   getProvinceForecasts: (
     provinceIds: ProvinceId[],
   ) => Promise<ProvinceForecast[]>
+  getDistrictForecasts?: (
+    districtIds: DistrictId[],
+  ) => Promise<DistrictForecast[]>
 }

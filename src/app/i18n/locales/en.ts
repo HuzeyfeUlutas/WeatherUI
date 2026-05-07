@@ -11,7 +11,7 @@ export const en = {
   },
   attribution: {
     footer:
-      'Weather data by <source>Open-Meteo</source>, licensed under <license>CC BY 4.0</license>.',
+      'Weather data by <source>Open-Meteo</source>, licensed under <license>CC BY 4.0</license>. District boundaries by <boundarySource>geoBoundaries / OpenStreetMap</boundarySource>, licensed under <boundaryLicense>ODbL 1.0</boundaryLicense>.',
     weatherDataBy: 'Weather data by',
     licensedUnder: 'licensed under',
     earthTexture:
@@ -51,6 +51,16 @@ export const en = {
     label: 'Select province',
     placeholder: 'Search province or plate',
     empty: 'No results found',
+  },
+  districtMap: {
+    activeDistrict: 'Active district',
+    ankaraDistricts: 'Districts',
+    ariaLabel: '{{province}} district temperature map',
+    backToTurkey: 'Turkey map',
+    selectDistricts: 'Select',
+    title: 'Hava Atlası // District map',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
   },
   forecast: {
     activeProvince: 'Active province',

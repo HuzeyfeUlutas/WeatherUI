@@ -14,6 +14,7 @@ type ForecastPanelProps = {
   isError: boolean
   isLoading: boolean
   province: Province
+  onOpenDistrictMap?: () => void
   onRetry: () => void
   selectedDate?: string
 }
@@ -23,6 +24,7 @@ export function ForecastPanel({
   isError,
   isLoading,
   province,
+  onOpenDistrictMap,
   onRetry,
   selectedDate,
 }: ForecastPanelProps) {
@@ -117,6 +119,16 @@ export function ForecastPanel({
               )} ${t('forecast.max')}`
             : t('forecast.waiting')}
         </p>
+
+        {onOpenDistrictMap ? (
+          <button
+            className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 text-sm font-bold text-white shadow-sm transition hover:brightness-110"
+            onClick={onOpenDistrictMap}
+            type="button"
+          >
+            {t('districtMap.selectDistricts')}
+          </button>
+        ) : null}
 
         <div className="mt-6 grid grid-cols-2 gap-3">
           <WeatherMetricCard

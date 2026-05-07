@@ -11,7 +11,7 @@ export const tr = {
   },
   attribution: {
     footer:
-      'Hava verisi <source>Open-Meteo</source> tarafindan saglanir, <license>CC BY 4.0</license> lisanslidir.',
+      'Hava verisi <source>Open-Meteo</source> tarafindan saglanir, <license>CC BY 4.0</license> lisanslidir. Ilce sinirlari <boundarySource>geoBoundaries / OpenStreetMap</boundarySource> kaynaklidir, <boundaryLicense>ODbL 1.0</boundaryLicense> lisanslidir.',
     weatherDataBy: 'Hava verisi',
     licensedUnder: 'lisansi',
     earthTexture:
@@ -51,6 +51,16 @@ export const tr = {
     label: 'Il sec',
     placeholder: 'Il adi veya plaka ara',
     empty: 'Sonuc bulunamadi',
+  },
+  districtMap: {
+    activeDistrict: 'Aktif ilce',
+    ankaraDistricts: 'Ilceler',
+    ariaLabel: '{{province}} ilce bazli sicaklik haritasi',
+    backToTurkey: 'Turkiye haritasi',
+    selectDistricts: 'Sec',
+    title: 'Hava Atlası // Ilce haritasi',
+    zoomIn: 'Yaklastir',
+    zoomOut: 'Uzaklastir',
   },
   forecast: {
     activeProvince: 'Aktif il',
